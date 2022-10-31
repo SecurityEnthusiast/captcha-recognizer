@@ -9,51 +9,42 @@ from captcha.image import ImageCaptcha
 
 import config
 
-IMAGE_HEIGHT = config.IMAGE_HEIGHT
-IMAGE_WIDTH = config.IMAGE_WIDTH
-CHARS_NUM = config.CHARS_NUM
-CHAR_SET = config.CHAR_SET
-
 TEST_SIZE = 1000
 TRAIN_SIZE = 50000
 VALID_SIZE = 20000
 
-FLAGS = None
+#FLAGS = None
 
 def gen(gen_dir, total_size, chars_num):
   if not os.path.exists(gen_dir):
     os.makedirs(gen_dir)
-  image = ImageCaptcha(width=IMAGE_WIDTH, height=IMAGE_HEIGHT,font_sizes=[40])
+  image = ImageCaptcha(width=config.IMAGE_WIDTH, height=config.IMAGE_HEIGHT,font_sizes=[40])
   for i in range(total_size):
-    label = ''.join(random.sample(CHAR_SET, CHARS_NUM))
+    label = ''.join(random.sample(config.CHAR_SET, config.CHARS_NUM))
     image.write(label, os.path.join(gen_dir, label+'_num'+str(i)+'.png'))
 
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser()
-  parser.add_argument(
-      '--test_dir',
-      type=str,
-      default='./data/test_data',
-      help='Test data-set directory address'
-  )
-  parser.add_argument(
-      '--train_dir',
-      type=str,
-      default='./data/train_data',
-      help='Train data-set directory adddress'
-  )
-  parser.add_argument(
-      '--valid_dir',
-      type=str,
-      default='./data/valid_data',
-      help='Validation data-set directory address'
-  )
+  parser = argparse.ArgumentParser(description='Change default value')
+
+  parser.add_argument('--tedr',type=str,default='./data/test_data',help='Test data-set directory address')
+  
+  parser.add_argument('--tesz',type=int,default=TEST_SIZE,help='Number of test data-set')
+  
+  parser.add_argument('--trdr',type=str,default='./data/train_data',help='Train data-set directory adddress')
+  
+  parser.add_argument('--trsz',type=int,default=TRAIN_SIZE,help='Number of train data-set')
+  
+  parser.add_argument('--vadr',type=str,default='./data/valid_data',help='Validation data-set directory address')
+  
+  parser.add_argument('--vasz',type=int,default=VALID_SIZE,help='Number of validation data-set')
+
+
   FLAGS, unparsed = parser.parse_known_args()
-  print('>> generate %d captchas in %s' % (TEST_SIZE, FLAGS.test_dir))
-  gen(FLAGS.test_dir, TEST_SIZE, CHARS_NUM)
-  print ('>> generate %d captchas in %s' % (TRAIN_SIZE, FLAGS.train_dir))
-  gen(FLAGS.train_dir, TRAIN_SIZE, CHARS_NUM)
-  print ('>> generate %d captchas in %s' % (VALID_SIZE, FLAGS.valid_dir))
-  gen(FLAGS.valid_dir, VALID_SIZE, CHARS_NUM)
+  print('>> generate %d captchas in %s' % (FLAGS.tesz, FLAGS.tedr))
+  gen(FLAGS.tedr, FLAGS.tesz, config.CHARS_NUM)
+  print ('>> generate %d captchas in %s' % (FLAGS.trsz, FLAGS.trdr))
+  gen(FLAGS.trdr, FLAGS.trsz, config.CHARS_NUM)
+  print ('>> generate %d captchas in %s' % (FLAGS.vasz, FLAGS.vadr))
+  gen(FLAGS.vadr, FLAGS.vasz, config.CHARS_NUM)
   print ('>> generate Done!')
