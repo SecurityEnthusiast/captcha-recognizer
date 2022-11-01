@@ -15,13 +15,13 @@ FLAGS = None
 def run_eval():
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     images, labels = captcha.inputs(train=False, batch_size=FLAGS.batch_size)
-    logits = captcha.inference(images, keep_prob=1)
+    logits = captcha.inference(images, keep_prob=0.1)
     eval_correct = captcha.evaluation(logits, labels)  
-    sess = tf.Session()    
-    saver = tf.train.Saver()    
-    saver.restore(sess, tf.train.latest_checkpoint(FLAGS.checkpoint_dir))
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    sess = tf.compat.v1.Session()    
+    saver = tf.compat.v1.train.Saver()    
+    saver.restore(sess, tf.compat.v1.train.latest_checkpoint(FLAGS.checkpoint_dir))
+    coord = tf.compat.v1.train.Coordinator()
+    threads = tf.compat.v1.train.start_queue_runners(sess=sess, coord=coord)
     try:
       num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
       true_count = 0
@@ -48,9 +48,9 @@ def run_eval():
 
 
 def main(_):
-  if tf.gfile.Exists(FLAGS.eval_dir):
-    tf.gfile.DeleteRecursively(FLAGS.eval_dir)
-  tf.gfile.MakeDirs(FLAGS.eval_dir)
+  if tf.io.gfile.exists(FLAGS.eval_dir):
+    tf.io.gfile.rmtree(FLAGS.eval_dir)
+  tf.io.gfile.makedirs(FLAGS.eval_dir)
   run_eval()
 
 
@@ -81,4 +81,4 @@ if __name__ == '__main__':
       help='Directory where to write event logs.'
   )
   FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)

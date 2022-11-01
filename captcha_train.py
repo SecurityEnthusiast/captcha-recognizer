@@ -24,17 +24,17 @@ def run_train():
 
     train_op = captcha.training(loss)
 
-    saver = tf.train.Saver(tf.global_variables())
+    saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables())
 
-    init_op = tf.group(tf.global_variables_initializer(),
-                       tf.local_variables_initializer())
+    init_op = tf.group(tf.compat.v1.global_variables_initializer(),
+                       tf.compat.v1.local_variables_initializer())
 
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
 
     sess.run(init_op)
 
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    coord = tf.compat.v1.train.Coordinator()
+    threads = tf.compat.v1.train.start_queue_runners(sess=sess, coord=coord)
     try:
       step = 0
       while not coord.should_stop():
@@ -59,9 +59,9 @@ def run_train():
 
 
 def main(_):
-  if tf.gfile.Exists(FLAGS.train_dir):
-    tf.gfile.DeleteRecursively(FLAGS.train_dir)
-  tf.gfile.MakeDirs(FLAGS.train_dir)
+  if tf.io.gfile.exists(FLAGS.train_dir):
+    tf.io.gfile.rmtree(FLAGS.train_dir)
+  tf.io.gfile.makedirs(FLAGS.train_dir)
   run_train()
 
 
@@ -86,4 +86,4 @@ if __name__ == '__main__':
       help='Directory where to write checkpoint.'
   )
   FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)

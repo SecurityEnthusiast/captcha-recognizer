@@ -10,12 +10,13 @@ from PIL import Image
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import gfile
+from tensorflow.io import gfile
+#from tensorflow.python.platform import gfile
 import config
 
 IMAGE_HEIGHT = config.IMAGE_HEIGHT
 IMAGE_WIDTH = config.IMAGE_WIDTH
-CHAR_SETS = config.CHAR_SETS
+CHAR_SET = config.CHAR_SET
 CLASSES_NUM = config.CLASSES_NUM
 CHARS_NUM = config.CHARS_NUM
 
@@ -39,9 +40,9 @@ def label_to_one_hot(label):
   index = []
   for i, c in enumerate(label):
     offset.append(i)
-    index.append(CHAR_SETS.index(c))
+    index.append(CHAR_SET.index(c))
   one_hot_index = [offset, index]
-  one_hot_label[one_hot_index] = 1.0
+  one_hot_label[tuple(one_hot_index)] = 1.0
   return one_hot_label.astype(np.uint8)
 
 
@@ -51,15 +52,15 @@ def conver_to_tfrecords(data_set, name):
       os.makedirs(RECORD_DIR)
   filename = os.path.join(RECORD_DIR, name)
   print('>> Writing', filename)
-  writer = tf.python_io.TFRecordWriter(filename)
+  writer = tf.io.TFRecordWriter(filename)
   num_examples = len(data_set)
   for index in range(num_examples):
     image = data_set[index][0]
     height = image.shape[0]
     width = image.shape[1]
-    image_raw = image.tostring()
+    image_raw = image.tobytes()
     label = data_set[index][1]
-    label_raw = label_to_one_hot(label).tostring()
+    label_raw = label_to_one_hot(label).tobytes()
     example = tf.train.Example(features=tf.train.Features(feature={
         'height': _int64_feature(height),
         'width': _int64_feature(width),
@@ -71,7 +72,7 @@ def conver_to_tfrecords(data_set, name):
   
 
 def create_data_list(image_dir):
-  if not gfile.Exists(image_dir):
+  if not gfile.exists(image_dir):
     print("Image director '" + image_dir + "' not found.")
     return None
   extensions = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG']
@@ -79,7 +80,7 @@ def create_data_list(image_dir):
   file_list = []
   for extension in extensions:
     file_glob = os.path.join(image_dir, '*.' + extension)
-    file_list.extend(gfile.Glob(file_glob))
+    file_list.extend(gfile.glob(file_glob))
   if not file_list:
     print("No files found in '" + image_dir + "'")
     return None
@@ -94,30 +95,30 @@ def create_data_list(image_dir):
     label_name = os.path.basename(file_name).split('_')[0]
     images.append(input_img)
     labels.append(label_name)
-  return zip(images, labels)
+  return list(zip(images, labels))
 
 
 def main(_):
-  training_data = create_data_list(FLAGS.train_dir)
+  training_data = create_data_list(FLAGS.trdr)
   conver_to_tfrecords(training_data, TRAIN_FILE)
     
-  validation_data = create_data_list(FLAGS.valid_dir)
+  validation_data = create_data_list(FLAGS.vadr)
   conver_to_tfrecords(validation_data, VALID_FILE)
 
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--train_dir',
+      '--trdr',
       type=str,
       default='./data/train_data',
-      help='Directory training to get captcha data files and write the converted result.'
+      help='Training data-set directory address to fetch captcha data files and write TensorFlow record'
   )
   parser.add_argument(
-      '--valid_dir',
+      '--vadr',
       type=str,
       default='./data/valid_data',
-      help='Directory validation to get captcha data files and write the converted result.'
+      help='Validation data-set directory address to fetch captcha data files and write the TensorFlow record'
   )
   FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)
