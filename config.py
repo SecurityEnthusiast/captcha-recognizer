@@ -9,3 +9,5 @@ CHARS_NUM = 5
 RECORD_DIR = './data'
 TRAIN_FILE = 'train.tfrecords'
 VALID_FILE = 'valid.tfrecords'
+
+    

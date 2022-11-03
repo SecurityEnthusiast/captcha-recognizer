@@ -56,3 +56,4 @@ def inputs(train, batch_size):
                                                capacity=2000 + 3 * batch_size)
 
     return images, sparse_labels
+

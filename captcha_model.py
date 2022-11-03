@@ -116,3 +116,4 @@ def evaluation(logits, labels):
 
 def output(logits):
   return tf.argmax(logits, 2)
+
