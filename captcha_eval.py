@@ -15,7 +15,7 @@ FLAGS = None
 def run_eval():
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     images, labels = captcha.inputs(train=False, batch_size=FLAGS.batch_size)
-    logits = captcha.inference(images, keep_prob=0.1)
+    logits = captcha.inference(images, keep_prob=0.2)
     eval_correct = captcha.evaluation(logits, labels)  
     sess = tf.compat.v1.Session()    
     saver = tf.compat.v1.train.Saver()    

@@ -67,7 +67,7 @@ def run_predict():
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     input_images, input_filenames = input_data(FLAGS.captcha_dir)
     images = tf.constant(input_images)
-    logits = captcha.inference(images, keep_prob=0.1)
+    logits = captcha.inference(images, keep_prob=0.2)
     result = captcha.output(logits)
     saver = tf.compat.v1.train.Saver()
     sess = tf.compat.v1.Session()
