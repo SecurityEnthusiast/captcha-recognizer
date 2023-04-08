@@ -1,8 +1,8 @@
 Introduce
 =========
-Image recognition captchas using TensorFlow, no need image segmentation, run on ubuntu 16.04, python 2.7
+Image recognition captchas using TensorFlow, no need image segmentation, run on Ubuntu 18.04, Python 3.10, Tensorflow 2.10.0, Numpy 1.23.4
 
-![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/CMQVA_num717_1.png)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/CMQZJ_num908_1.png)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/CRGEU_num339_1.png)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/CZHBN_num989_1.png)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/DZPEW_num388_1.png)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/CZWED_num21_1.png)
+![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1ab2s_num286.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1ezx8_num398.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1kxw2_num940.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/3mtj9_num765.jpg)![captcha](hhttps://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/CMQVA_num717_1.png)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/DZPEW_num388_1.png)
 
 accuracy 99.7% judged by captcha_eval.py, training size 50000, after 20000 steps
 captcha generator: https://github.com/lepture/captcha
