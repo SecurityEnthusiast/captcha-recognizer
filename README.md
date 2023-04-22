@@ -4,12 +4,12 @@ Image recognition captchas using TensorFlow, no need image segmentation, run on 
 
 ![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1ab2s_num286.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1ezx8_num398.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/1kxw2_num940.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/3mtj9_num765.jpg)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/CMQVA_num717_1.png)![captcha](https://github.com/SecurityEnthusiast/captcha-recognizer/blob/master/data/test_data/DZPEW_num388_1.png)
 
-accuracy 99.7% judged by captcha_eval.py, training size 50000, after 20000 steps
-captcha generator: https://github.com/lepture/captcha
+
 
 ![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/1ab2s_num286.jpg)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/1ezx8_num398.jpg)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/1iv22_num346.jpg)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/1kxw2_num940.jpg)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/3mtj9_num765.jpg)![captcha](https://raw.githubusercontent.com/PatrickLib/captcha_recognition/master/data/test_data/1vuy5_num17.jpg)
 
-accuracy 52.1% judged by captcha_eval.py, training size 100000, after 200000 steps
+Accuracy is directly related to generated Training data size and the Learning steps number.
+For example, 
 captcha generator: https://github.com/Gregwar/CaptchaBundle
  
 Dependence
