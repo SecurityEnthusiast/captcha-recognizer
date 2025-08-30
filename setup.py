@@ -18,7 +18,7 @@ if (this_directory / "requirements.txt").exists():
 
 setup(
     name="captcha-recognizer",
-    version="2.0.0",
+    version="3.0.0",
     author="CAPTCHA Recognizer Team",
     author_email="team@captcha-recognizer.com",
     description="A modern CAPTCHA recognition system built with TensorFlow 2.x",
@@ -33,34 +33,34 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=requirements,
     extras_require={
         "dev": [
-            "pytest>=7.0.0",
-            "pytest-cov>=4.0.0",
-            "black>=22.0.0",
-            "flake8>=5.0.0",
-            "mypy>=1.0.0",
+            "pytest>=7.4.0",
+            "pytest-cov>=4.1.0",
+            "black>=23.0.0",
+            "flake8>=6.0.0",
+            "mypy>=1.5.0",
         ],
         "gpu": [
-            "tensorflow-gpu>=2.10.0",
+            "tensorflow-gpu>=2.15.0",
         ],
         "full": [
-            "matplotlib>=3.5.0",
-            "seaborn>=0.11.0",
-            "pandas>=1.5.0",
-            "scikit-learn>=1.1.0",
-            "opencv-python>=4.6.0",
+            "matplotlib>=3.7.0",
+            "seaborn>=0.12.0",
+            "pandas>=2.0.0",
+            "scikit-learn>=1.3.0",
+            "opencv-python>=4.8.0",
             "albumentations>=1.3.0",
-            "wandb>=0.13.0",
+            "wandb>=0.15.0",
         ],
     },
     entry_points={
@@ -80,4 +80,3 @@ setup(
         "Documentation": "https://github.com/your-username/captcha-recognizer#readme",
     },
 )
-
