@@ -227,9 +227,3 @@ def inputs(train: bool, batch_size: int):
         return loader.get_training_dataset(batch_size)
     else:
         return loader.get_validation_dataset(batch_size)
-
-<<<<<<< Updated upstream
-=======
-
-
->>>>>>> Stashed changes
