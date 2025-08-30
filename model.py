@@ -178,9 +178,3 @@ def save_model(model: keras.Model, model_path: str):
     except Exception as e:
         logger.error(f"Failed to save model to {model_path}: {e}")
         raise
-
-<<<<<<< Updated upstream
-=======
-
-
->>>>>>> Stashed changes
