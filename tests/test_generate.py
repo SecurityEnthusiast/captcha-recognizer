@@ -58,3 +58,11 @@ def test_holdout_is_not_used_as_training_data():
     assert train_files
     assert set(train_files).isdisjoint(holdout_files)
     assert set(train_files) | set(holdout_files) == set(files)
+
+def test_run_settings_name_the_sample_count_and_dropout():
+    from captcha_recognizer.demo import format_run_settings
+
+    assert format_run_settings(2000, 15, 0.5, 62) == (
+        "samples: 2000 epochs: 15 dropout: 0.5 charset: 62"
+    )
+

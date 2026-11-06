@@ -49,6 +49,15 @@ def learning_bar_passed(first_loss, last_loss, per_character, charset_size: int)
     return last_loss < first_loss and per_character > chance
 
 
+
+def format_run_settings(samples: int, epochs: int, dropout: float, charset_size: int) -> str:
+    """Name the run that produced the holdout score."""
+    return (
+        f"samples: {samples} epochs: {epochs} "
+        f"dropout: {dropout:.1f} charset: {charset_size}"
+    )
+
+
 def _clear_files(directory: Path) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     for path in directory.iterdir():
@@ -142,6 +151,7 @@ def run_demo(
     per_character = character_accuracy(pairs)
     passed = learning_bar_passed(first_loss, last_loss, per_character, len(char_set))
 
+    print(format_run_settings(samples, epochs, dropout, len(char_set)))
     print(f"holdout exact match: {exact:.4f}")
     print(f"holdout per-character: {per_character:.4f}")
     print(f"chance per-character: {1.0 / len(char_set):.4f}")
