@@ -1,3 +1,15 @@
 .DS_Store
 __pycache__/
 *.pyc
+.venv/
+
+# Generated captchas, records, and training outputs
+data/train_data/
+data/valid_data/
+data/demo/
+checkpoints/
+models/
+*.h5
+*.keras
+training.log
+predictions.csv
