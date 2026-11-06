@@ -31,12 +31,13 @@ The defaults are 2000 generated images, batch size 32, and 15 epochs on CPU. The
 
 It prints that per-character accuracy, the holdout exact-match rate beside it, the common character confusions, and one prediction line for each file in `data/test_data/`. Those 12 files are a listing, not the score. A CSV of the listing is written to `predictions.csv`.
 
-Each character is read from its own columns of the feature map, by one shared softmax. A run on CPU (seed 42, dropout 0.5, 15 epochs) printed:
+Each character is a slice of the feature map, and the slice keeps its rows. One shared softmax scores every slice. A run on CPU (seed 42, dropout 0.5, 15 epochs, 2000 images) printed:
 
-- 400 images: exact match `0.0000`, per-character `0.0100` (below chance), loss `20.6568` to `20.2035`
-- 2000 images: exact match `0.0000`, per-character `0.3070` (chance is about `0.0161`), loss `20.6404` to `13.9382`
+- holdout exact match `0.0625`
+- holdout per-character `0.5430` (chance is about `0.0161`)
+- training loss from `20.6388` down to `8.1171`
 
-The quick start draws 2000 images because 400 stay under chance. At 2000 the usual mistakes are lookalikes (`6`/`E`, `P`/`F`, `X`/`x`, `C`/`c`, `I`/`l`). Exact match stays at `0.0000` because a hit needs all five characters. The score log names the run with `samples:`, `epochs:`, `dropout:`, and `charset:`.
+The usual mistakes are still lookalikes (`D`/`0`, `O`/`0`, `X`/`x`, `V`/`v`, `8`/`B`, `I`/`l`, `S`/`5`). Pooling those rows away, at the same settings, reached per-character `0.3070` and exact match `0.0000`. The score log names the run with `samples:`, `epochs:`, `dropout:`, and `charset:`.
 
 The previous head was one 1024-unit layer on an 8×3 map. At these settings its holdout stayed near chance: 400 images per-character `0.0250`, 2000 images `0.0145`, and 4000 images `0.0175`. At 4000 images it read every file in `data/test_data/` as `fGLNi`. On a 400-image set, dropout off for 40 epochs on that head drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. `--dropout 0` is there to see that memorization. `--digits-only` switches the alphabet to `0-9`.
 
