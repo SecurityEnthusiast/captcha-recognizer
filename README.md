@@ -1,150 +1,41 @@
 # Captcha Recognizer
 
-[![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/downloads/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.10.0-orange.svg)](https://tensorflow.org/)
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
-A powerful and efficient CAPTCHA recognition system built with TensorFlow that can recognize text-based CAPTCHAs without requiring image segmentation. This project provides a complete pipeline from CAPTCHA generation to neural network training and recognition.
+A local trainer for 5-character text captchas generated in this repository. Images are grayscale and 128×48. The label is the filename prefix before the first `_`.
 
-## 🚀 Features
-
-- **No Image Segmentation Required**: Direct end-to-end recognition using deep learning
-- **High Accuracy**: Achieves excellent recognition rates with proper training data
-- **Multi-GPU Support**: Train on multiple GPUs for faster training
-- **Flexible Input**: Supports both JPG and PNG image formats
-- **Easy Training**: Simple pipeline from data preparation to model deployment
-- **Production Ready**: Includes evaluation and recognition scripts for real-world use
-
-## 📋 Requirements
-
-### System Requirements
-- **OS**: Ubuntu 18.04+ (tested on Ubuntu 18.04)
-- **Python**: 3.10+
-- **Memory**: Minimum 8GB RAM (16GB+ recommended for large datasets)
-
-### Dependencies
-- **Python 3.10**
-- **TensorFlow 2.10.0**
-- **NumPy 1.23.4**
-- **captcha** package
-
-## 🛠️ Installation
-
-### Option 1: Using pip
-```bash
-pip install -r requirements.txt
-```
-
-### Option 2: Manual Installation
-```bash
-# Install TensorFlow
-pip install tensorflow==2.10.0
-
-# Install NumPy
-pip install numpy==1.23.4
-
-# Install captcha package
-pip install captcha==0.1.1
-```
-
-## Project structure
-
-```
-captcha-recognizer/
-├── captcha_recognizer/   # Importable trainer
-├── data/test_data/       # Checked-in sample images
-├── legacy/               # Old TensorFlow 1 scripts (not the quick start)
-└── requirements.txt
-```
+This project does not call reCAPTCHA, hCaptcha, or Turnstile.
 
 ## Quick Start
+
+```bash
+captcha-demo --samples 200 --epochs 2
+```
+
+## Install
 
 ```bash
 pip install -e .
 ```
 
-```python
-from captcha_recognizer import train
+That installs TensorFlow, NumPy, Pillow, and captcha. The demo command generates a few hundred ImageCaptcha images, trains for two epochs, prints holdout exact-match accuracy, and prints one prediction line for each file in `data/test_data/`.
 
-train("data/train_data", epochs=1)
-```
+## Layout
 
-The label is the filename prefix before the first `_`. One epoch takes a finite `steps_per_epoch` (one pass over the folder unless you set it).
+- `captcha_recognizer/` is the importable trainer.
+- `data/test_data/` holds the checked-in sample images.
+- `legacy/` holds the old TensorFlow 1 scripts. They are not the quick start.
 
-The scripts in `legacy/` use removed TensorFlow 1 queue runners. They are kept for reference and are not part of this quick start.
+## Contributing
 
-## 🔧 Configuration
+Clone [SecurityEnthusiast/captcha-recognizer](https://github.com/SecurityEnthusiast/captcha-recognizer) and open a pull request there.
 
-### Model Parameters
-The neural network architecture and training parameters can be customized in `config.py`:
+## License
 
-- **Input dimensions**: Image width and height
-- **Character set**: Supported characters for recognition
-- **Network architecture**: Layer sizes and activation functions
-- **Training parameters**: Learning rate, batch size, epochs
+Apache License 2.0. See [LICENSE](LICENSE).
 
-### Training Configuration
-Adjust training parameters in the training scripts:
-- **Batch size**: Adjust based on available GPU memory
-- **Learning rate**: Start with default and tune as needed
-- **Epochs**: More epochs for better accuracy (with proper validation)
+## Support
 
-## 📊 Performance
-
-### Accuracy Factors
-- **Training Data Size**: Larger datasets improve accuracy
-- **Data Quality**: Clean, diverse CAPTCHAs work better
-- **Training Steps**: More iterations generally help
-- **Model Architecture**: Optimized for CAPTCHA recognition
-
-### Optimization Tips
-- Use data augmentation for better generalization
-- Implement early stopping to prevent overfitting
-- Experiment with different learning rates
-- Consider ensemble methods for production use
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Setup
-```bash
-# Clone the repository
-git clone https://github.com/SecurityEnthusiast/captcha-recognizer.git
-cd captcha-recognizer
-
-# Install development dependencies
-pip install -r requirements.txt
-
-# Run tests
-python test_basic.py
-```
-
-## 📝 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **CAPTCHA Generator**: [Gregwar/CaptchaBundle](https://github.com/Gregwar/CaptchaBundle) for sample CAPTCHA generation
-- **TensorFlow**: For the deep learning framework
-- **Community**: All contributors and users of this project
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/SecurityEnthusiast/captcha-recognizer/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/SecurityEnthusiast/captcha-recognizer/discussions)
-- **Wiki**: [Project Wiki](https://github.com/SecurityEnthusiast/captcha-recognizer/wiki)
-
----
-
-**Made with ❤️ for the open-source community**
-
-*If you find this project useful, please consider giving it a ⭐ star!*
-
+- [Issues](https://github.com/SecurityEnthusiast/captcha-recognizer/issues)
+- [Source](https://github.com/SecurityEnthusiast/captcha-recognizer)
