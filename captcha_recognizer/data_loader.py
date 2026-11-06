@@ -121,7 +121,7 @@ class CaptchaDataLoader:
                       file_path: str, 
                       batch_size: int, 
                       shuffle: bool = True,
-                      repeat: bool = True) -> tf.data.Dataset:
+                      repeat: bool = False) -> tf.data.Dataset:
         """
         Create a TensorFlow dataset from TFRecord files.
         

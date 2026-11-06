@@ -6,7 +6,7 @@ from .config import Config, DataConfig, ModelConfig, TrainingConfig
 from .data_loader import CaptchaDataLoader
 from .model import CaptchaModel, create_model
 from .predictor import CaptchaPredictor
-from .trainer import CaptchaTrainer
+from .trainer import CaptchaTrainer, train
 
 __all__ = [
     "Config",
@@ -18,4 +18,5 @@ __all__ = [
     "CaptchaTrainer",
     "CaptchaPredictor",
     "create_model",
+    "train",
 ]

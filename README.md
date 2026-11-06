@@ -61,8 +61,15 @@ captcha-recognizer/
 
 ```bash
 pip install -e .
-python -c "import captcha_recognizer"
 ```
+
+```python
+from captcha_recognizer import train
+
+train("data/train_data", epochs=1)
+```
+
+The label is the filename prefix before the first `_`. One epoch takes a finite `steps_per_epoch` (one pass over the folder unless you set it).
 
 The scripts in `legacy/` use removed TensorFlow 1 queue runners. They are kept for reference and are not part of this quick start.
 
