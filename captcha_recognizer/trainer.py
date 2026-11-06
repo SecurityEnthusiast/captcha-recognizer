@@ -1,270 +1,145 @@
-"""
-Modern training module for CAPTCHA recognition model.
-"""
+"""Train the captcha CNN on a folder of labeled images."""
 
-import tensorflow as tf
-from tensorflow import keras
-import numpy as np
-from pathlib import Path
-from typing import Optional, Dict, Any
-import logging
 import argparse
-import sys
-from datetime import datetime
-import json
+from pathlib import Path
 
 from .config import Config, TrainingConfig
+from .data_loader import epoch_steps, folder_dataset, list_image_files
 from .model import create_model, save_model
-from .data_loader import CaptchaDataLoader
 
-logger = logging.getLogger(__name__)
+
+def fit_model(
+    model,
+    train_dataset,
+    train_count,
+    batch_size,
+    epochs,
+    valid_dataset=None,
+    valid_count=None,
+    callbacks=None,
+    verbose=1,
+):
+    """Fit for a fixed number of epochs.
+
+    The training set is repeated, and steps_per_epoch is the number of
+    batches in one pass. Without that step count, a repeated dataset never
+    ends an epoch.
+    """
+    kwargs = {
+        "epochs": epochs,
+        "steps_per_epoch": epoch_steps(train_count, batch_size),
+        "verbose": verbose,
+    }
+    if callbacks:
+        kwargs["callbacks"] = callbacks
+    if valid_dataset is not None:
+        kwargs["validation_data"] = valid_dataset.repeat()
+        kwargs["validation_steps"] = epoch_steps(valid_count, batch_size)
+    return model.fit(train_dataset.repeat(), **kwargs)
 
 
 class CaptchaTrainer:
-    """
-    Trainer class for CAPTCHA recognition model.
-    
-    This class handles the training process including model compilation,
-    training, validation, and checkpointing.
-    """
-    
+    """Train, checkpoint, and save one model."""
+
     def __init__(self, config: Config):
         self.config = config
-        self.data_loader = CaptchaDataLoader(config.data, config.model)
         self.model = None
         self.history = None
-        
-        # Setup logging
-        self._setup_logging()
-        
-        # Create output directories
-        self._create_directories()
-    
-    def _setup_logging(self):
-        """Setup logging configuration."""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('training.log'),
-                logging.StreamHandler(sys.stdout)
-            ]
-        )
-    
-    def _create_directories(self):
-        """Create necessary directories for training outputs."""
-        Path(self.config.training.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-        Path(self.config.training.model_save_path).parent.mkdir(parents=True, exist_ok=True)
-    
+
     def prepare_model(self):
-        """Prepare the model for training."""
-        logger.info("Creating model...")
         self.model = create_model(
             self.config.model,
             learning_rate=self.config.training.learning_rate,
         )
-        
-        # Print model summary
-        self.model.summary()
-        
-        # Save model architecture
-        model_arch_path = Path(self.config.training.checkpoint_dir) / "model_architecture.json"
-        with open(model_arch_path, 'w') as f:
-            json.dump(self.model.to_json(), f, indent=2)
-        
-        logger.info(f"Model architecture saved to {model_arch_path}")
-    
-    def prepare_data(self):
-        """Prepare training and validation datasets."""
-        logger.info("Preparing datasets...")
-        
-        try:
-            self.train_dataset = self.data_loader.get_training_dataset(
-                self.config.training.batch_size
-            )
-            self.val_dataset = self.data_loader.get_validation_dataset(
-                self.config.training.batch_size
-            )
-            
-            logger.info("Datasets prepared successfully")
-            
-        except Exception as e:
-            logger.error(f"Failed to prepare datasets: {e}")
-            raise
-    
-    def setup_callbacks(self):
-        """Setup training callbacks."""
-        callbacks = []
-        
-        # Model checkpointing
-        checkpoint_callback = keras.callbacks.ModelCheckpoint(
-            filepath=Path(self.config.training.checkpoint_dir) / "model_{epoch:02d}_{val_loss:.4f}.h5",
-            monitor='val_loss',
-            save_best_only=True,
-            save_weights_only=False,
-            mode='min',
-            verbose=1
-        )
-        callbacks.append(checkpoint_callback)
-        
-        # Early stopping
-        early_stopping = keras.callbacks.EarlyStopping(
-            monitor='val_loss',
-            patience=self.config.training.early_stopping_patience,
-            restore_best_weights=True,
-            verbose=1
-        )
-        callbacks.append(early_stopping)
-        
-        # Learning rate reduction
-        lr_reducer = keras.callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.5,
-            patience=5,
-            min_lr=1e-7,
-            verbose=1
-        )
-        callbacks.append(lr_reducer)
-        
-        # TensorBoard logging
-        tensorboard_callback = keras.callbacks.TensorBoard(
-            log_dir=Path(self.config.training.checkpoint_dir) / "logs",
-            histogram_freq=1,
-            write_graph=True,
-            write_images=True
-        )
-        callbacks.append(tensorboard_callback)
-        
-        return callbacks
-    
-    def train(self):
-        """Execute the training process."""
-        logger.info("Starting training...")
-        
-        # Prepare model and data
+
+    def train(self, train_dir=None, valid_dir=None):
+        """Train on train_dir and, when that folder has images, validate."""
+        train_dir = Path(train_dir or self.config.data.train_dir)
+        valid_dir = Path(valid_dir or self.config.data.valid_dir)
         self.prepare_model()
-        self.prepare_data()
-        
-        # Setup callbacks
-        callbacks = self.setup_callbacks()
-        
-        # Training
-        logger.info(f"Training for {self.config.training.epochs} epochs...")
-        
-        try:
-            self.history = self.model.fit(
-                self.train_dataset,
-                epochs=self.config.training.epochs,
-                validation_data=self.val_dataset,
-                callbacks=callbacks,
-                verbose=1
+
+        train_dataset, train_count = folder_dataset(
+            train_dir,
+            self.config.model,
+            batch_size=self.config.training.batch_size,
+            shuffle=True,
+        )
+        valid_dataset = None
+        valid_count = None
+        callbacks = []
+        if valid_dir.is_dir() and list_image_files(valid_dir):
+            valid_dataset, valid_count = folder_dataset(
+                valid_dir,
+                self.config.model,
+                batch_size=self.config.training.batch_size,
+                shuffle=False,
             )
-            
-            logger.info("Training completed successfully!")
-            
-            # Save final model
-            save_model(self.model, self.config.training.model_save_path)
-            
-            # Save training history
-            history_path = Path(self.config.training.checkpoint_dir) / "training_history.json"
-            with open(history_path, 'w') as f:
-                json.dump(self.history.history, f, indent=2)
-            
-            logger.info(f"Training history saved to {history_path}")
-            
-        except Exception as e:
-            logger.error(f"Training failed: {e}")
-            raise
-    
-    def evaluate(self, test_dataset: Optional[tf.data.Dataset] = None):
-        """Evaluate the trained model."""
-        if self.model is None:
-            raise ValueError("Model not trained yet. Call train() first.")
-        
-        logger.info("Evaluating model...")
-        
-        if test_dataset is None:
-            test_dataset = self.val_dataset
-        
-        # Evaluate on test data
-        evaluation_results = self.model.evaluate(test_dataset, verbose=1)
-        
-        # Log results
-        metrics_names = self.model.metrics_names
-        for name, value in zip(metrics_names, evaluation_results):
-            logger.info(f"{name}: {value:.4f}")
-        
-        return dict(zip(metrics_names, evaluation_results))
+            callbacks = self._callbacks()
+
+        self.history = fit_model(
+            self.model,
+            train_dataset,
+            train_count,
+            self.config.training.batch_size,
+            self.config.training.epochs,
+            valid_dataset=valid_dataset,
+            valid_count=valid_count,
+            callbacks=callbacks,
+        )
+        destination = Path(self.config.training.model_save_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        save_model(self.model, str(destination))
+        return self.history
+
+    def _callbacks(self):
+        from tensorflow import keras
+
+        checkpoint_dir = Path(self.config.training.checkpoint_dir)
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        return [
+            keras.callbacks.ModelCheckpoint(
+                filepath=str(checkpoint_dir / "model_{epoch:02d}.keras"),
+                monitor="val_loss",
+                save_best_only=True,
+                mode="min",
+                verbose=0,
+            ),
+            keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                patience=self.config.training.early_stopping_patience,
+                restore_best_weights=True,
+                verbose=0,
+            ),
+        ]
+
+
+def train(train_dir, valid_dir=None, config: Config = None):
+    """Train with Config defaults unless the caller passes its own."""
+    trainer = CaptchaTrainer(config or Config())
+    return trainer.train(train_dir, valid_dir)
 
 
 def main():
-    """Main training function."""
-    parser = argparse.ArgumentParser(description='Train CAPTCHA recognition model')
-    parser.add_argument(
-        '--config',
-        type=str,
-        default=None,
-        help='Path to configuration file (optional)'
-    )
-    parser.add_argument(
-        '--batch_size',
-        type=int,
-        default=128,
-        help='Training batch size'
-    )
-    parser.add_argument(
-        '--epochs',
-        type=int,
-        default=100,
-        help='Number of training epochs'
-    )
-    parser.add_argument(
-        '--learning_rate',
-        type=float,
-        default=1e-4,
-        help='Learning rate'
-    )
-    parser.add_argument(
-        '--checkpoint_dir',
-        type=str,
-        default='./checkpoints',
-        help='Directory for saving checkpoints'
-    )
-    
+    parser = argparse.ArgumentParser(description="Train on a folder of captcha images")
+    parser.add_argument("--train-dir", default="./data/train_data")
+    parser.add_argument("--valid-dir", default="./data/valid_data")
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
+    parser.add_argument("--checkpoint-dir", default="./checkpoints")
+    parser.add_argument("--model-path", default="./models/captcha_model.keras")
     args = parser.parse_args()
-    
-    # Create configuration
-    if args.config and Path(args.config).exists():
-        # Load from file (implement config file loading if needed)
-        config = Config()
-    else:
-        # Use command line arguments
-        config = Config(
-            training=TrainingConfig(
-                batch_size=args.batch_size,
-                epochs=args.epochs,
-                learning_rate=args.learning_rate,
-                checkpoint_dir=args.checkpoint_dir
-            )
+    config = Config(
+        training=TrainingConfig(
+            batch_size=args.batch_size,
+            epochs=args.epochs,
+            learning_rate=args.learning_rate,
+            checkpoint_dir=args.checkpoint_dir,
+            model_save_path=args.model_path,
         )
-    
-    # Create trainer and start training
-    trainer = CaptchaTrainer(config)
-    
-    try:
-        trainer.train()
-        
-        # Evaluate the model
-        evaluation_results = trainer.evaluate()
-        logger.info("Training and evaluation completed successfully!")
-        
-    except KeyboardInterrupt:
-        logger.info("Training interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Training failed: {e}")
-        sys.exit(1)
+    )
+    train(args.train_dir, args.valid_dir, config)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

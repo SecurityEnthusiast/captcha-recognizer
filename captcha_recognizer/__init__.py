@@ -3,14 +3,11 @@
 __version__ = "3.0.0"
 
 from .config import Config, DataConfig, ModelConfig, TrainingConfig
-from .data_loader import CaptchaDataLoader
-from .model import CaptchaModel, create_model
+from .model import create_model
 from .predictor import CaptchaPredictor
-from .trainer import CaptchaTrainer
+from .trainer import CaptchaTrainer, train
 
 __all__ = [
-    "CaptchaDataLoader",
-    "CaptchaModel",
     "CaptchaPredictor",
     "CaptchaTrainer",
     "Config",
@@ -18,4 +15,5 @@ __all__ = [
     "ModelConfig",
     "TrainingConfig",
     "create_model",
+    "train",
 ]

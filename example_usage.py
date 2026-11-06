@@ -15,7 +15,7 @@ def example_basic_usage():
     print("=" * 50)
     
     try:
-        from captcha_recognizer import Config, CaptchaModel, create_model
+        from captcha_recognizer import Config, create_model
         
         # Create configuration
         config = Config()
@@ -76,26 +76,11 @@ def example_data_loader():
     print("=" * 50)
     
     try:
-        from captcha_recognizer import Config, CaptchaDataLoader
-        
-        config = Config()
-        data_loader = CaptchaDataLoader(config.data, config.model)
-        
-        print("✓ Data loader created successfully")
-        
-        # Create synthetic dataset for demonstration
-        synthetic_dataset = data_loader.create_synthetic_dataset(5)
-        print(f"✓ Created synthetic dataset with 5 samples")
-        
-        # Show dataset structure
-        for batch_idx, (images, labels) in enumerate(synthetic_dataset):
-            print(f"  Batch {batch_idx + 1}:")
-            print(f"    Images shape: {images.shape}")
-            print(f"    Labels shape: {labels.shape}")
-            if batch_idx >= 1:  # Just show first 2 batches
-                break
-        
-        return True
+        from captcha_recognizer.data_loader import label_from_filename
+
+        label = label_from_filename("1ab2s_num286.jpg")
+        print(f"✓ Label read from filename: {label}")
+        return label == "1ab2s"
         
     except Exception as e:
         print(f"✗ Data loader example failed: {e}")
