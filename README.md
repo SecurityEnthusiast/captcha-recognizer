@@ -37,7 +37,14 @@ A default run on CPU (seed 42, dropout 0.5) printed:
 - holdout per-character `0.0250` (chance is about `0.0161`)
 - training loss from `20.6465` down to `20.1597`
 
-The same images with dropout off for 40 epochs drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. The network memorizes a few hundred captchas. It does not carry that to new ones from the same generator. `--dropout 0` is there to see the memorization. `--digits-only` switches the alphabet to `0-9`.
+The same settings with more generated images, still seed 42, dropout 0.5, and 15 epochs:
+
+- 2000 images: exact match `0.0000`, per-character `0.0145` (below chance), loss `20.6380` to `20.5579`
+- 4000 images: exact match `0.0000`, per-character `0.0175`, loss `20.6388` to `20.6003`
+
+The holdout stays near chance. The 4000-image run passes the learning bar because `0.0175` is just above `0.0161`. Its common mistakes pile onto a few letters (`N`, `f`, `L`), and all 12 files in `data/test_data/` were read as `fGLNi`. The commands are `captcha-demo --samples 2000` and `captcha-demo --samples 4000`. The score log names the run with `samples:`, `epochs:`, `dropout:`, and `charset:`.
+
+On that 400-image set, dropout off for 40 epochs drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. The network memorizes a few hundred captchas. It does not carry that to new ones from the same generator. `--dropout 0` is there to see the memorization. `--digits-only` switches the alphabet to `0-9`.
 
 ## Train on your own folder
 
