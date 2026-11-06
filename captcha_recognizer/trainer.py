@@ -59,7 +59,10 @@ class CaptchaTrainer:
     def prepare_model(self):
         """Prepare the model for training."""
         logger.info("Creating model...")
-        self.model = create_model(self.config.model)
+        self.model = create_model(
+            self.config.model,
+            learning_rate=self.config.training.learning_rate,
+        )
         
         # Print model summary
         self.model.summary()
