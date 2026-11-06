@@ -5,7 +5,6 @@ Modern prediction module for CAPTCHA recognition.
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 import logging
 import argparse
@@ -16,6 +15,8 @@ import json
 from .config import Config, ModelConfig
 from .model import load_model
 from .data_loader import CaptchaDataLoader
+from .labels import label_from_filename
+from .metrics import score_pairs
 from .preprocess import preprocess_image as preprocess_array
 
 logger = logging.getLogger(__name__)
@@ -140,41 +141,32 @@ class CaptchaPredictor:
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
         
-        # Get predictions
         results = self.predict_batch(test_dir)
-        
-        # Calculate accuracy
-        total_count = len(results)
-        correct_count = 0
-        
-        for filename, predicted_text, confidence in results:
+        pairs = []
+        for filename, predicted_text, _confidence in results:
             if ground_truth and filename in ground_truth:
-                true_text = ground_truth[filename]
-                if predicted_text == true_text:
-                    correct_count += 1
+                truth = ground_truth[filename]
             else:
-                # Try to extract true text from filename
-                # This assumes filename contains the true CAPTCHA text
-                filename_without_ext = Path(filename).stem
-                if predicted_text.lower() in filename_without_ext.lower():
-                    correct_count += 1
-        
-        accuracy = correct_count / total_count if total_count > 0 else 0.0
-        
-        # Calculate average confidence
-        avg_confidence = np.mean([conf for _, _, conf in results])
-        
+                truth = label_from_filename(filename)
+            pairs.append((predicted_text, truth))
+        scores = score_pairs(pairs)
+        avg_confidence = float(np.mean([conf for _, _, conf in results])) if results else 0.0
         evaluation_results = {
-            'total_samples': total_count,
-            'correct_predictions': correct_count,
-            'accuracy': accuracy,
-            'average_confidence': avg_confidence,
-            'predictions': results
+            "total_samples": scores["total"],
+            "correct_predictions": scores["exact_correct"],
+            "accuracy": scores["exact_match"],
+            "exact_match": scores["exact_match"],
+            "per_character": scores["per_character"],
+            "average_confidence": avg_confidence,
+            "predictions": results,
         }
-        
-        logger.info(f"Evaluation results: {correct_count}/{total_count} correct ({accuracy:.3f})")
-        logger.info(f"Average confidence: {avg_confidence:.3f}")
-        
+        logger.info(
+            "Exact match %s/%s (%.3f), per-character %.3f",
+            scores["exact_correct"],
+            scores["total"],
+            scores["exact_match"],
+            scores["per_character"],
+        )
         return evaluation_results
     
     def save_predictions(self, 
