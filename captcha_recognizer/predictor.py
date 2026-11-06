@@ -5,7 +5,6 @@ Modern prediction module for CAPTCHA recognition.
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Any
 import logging
 import argparse
@@ -15,7 +14,9 @@ import json
 from PIL import Image
 
 from .config import Config, ModelConfig
-from .data_loader import list_image_files
+from .data_loader import label_from_filename, list_image_files
+from .decode import decode_heads, ordered_heads, predict
+from .metrics import character_accuracy, exact_matches
 from .model import load_model
 from .preprocess import load_image_batch
 
@@ -88,12 +89,15 @@ class CaptchaPredictor:
         # Preprocess image
         image_array = self.preprocess_image(image_path)
         
-        predictions = self._ordered_heads(self.model.predict(image_array, verbose=0))
+        predictions = ordered_heads(
+            self.model(image_array, training=False),
+            self.config.model.chars_num,
+        )
         
-        # Process predictions
-        predicted_text = self._decode_predictions(predictions)
-        confidence = self._calculate_confidence(predictions)
-        
+        predicted_text, confidence = decode_heads(
+            predictions,
+            self.config.model.char_set,
+        )
         return predicted_text, confidence
     
     def predict_batch(self, image_dir: Optional[str] = None) -> List[Tuple[str, str, float]]:
@@ -120,69 +124,23 @@ class CaptchaPredictor:
         ])
         filenames = [file.name for file in files]
 
-        predictions = self._ordered_heads(self.model.predict(images, verbose=0))
+        predictions = ordered_heads(
+            self.model(images, training=False),
+            self.config.model.chars_num,
+        )
         
         # Process results
         results = []
         for i, filename in enumerate(filenames):
-            predicted_text = self._decode_predictions([pred[i] for pred in predictions])
-            confidence = self._calculate_confidence([pred[i] for pred in predictions])
+            sample_heads = [head[i] for head in predictions]
+            predicted_text, confidence = decode_heads(
+                sample_heads,
+                self.config.model.char_set,
+            )
             results.append((filename, predicted_text, confidence))
         
         return results
-    
-    def _ordered_heads(self, predictions):
-        """List character heads in position order.
 
-        A functional model returns a dict keyed by char_N_output. The old
-        list output is still accepted.
-        """
-        if isinstance(predictions, dict):
-            return [
-                predictions[f"char_{index}_output"]
-                for index in range(self.config.model.chars_num)
-            ]
-        return list(predictions)
-
-    def _decode_predictions(self, predictions: List[np.ndarray]) -> str:
-        """
-        Decode model predictions to text.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Decoded text string
-        """
-        decoded_text = ""
-        
-        for char_pred in predictions:
-            # Get the character with highest probability
-            char_index = np.argmax(char_pred)
-            decoded_text += self.config.model.char_set[char_index]
-        
-        return decoded_text
-    
-    def _calculate_confidence(self, predictions: List[np.ndarray]) -> float:
-        """
-        Calculate confidence score for predictions.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Average confidence score
-        """
-        confidences = []
-        
-        for char_pred in predictions:
-            # Get the probability of the predicted character
-            char_index = np.argmax(char_pred)
-            confidence = char_pred[char_index]
-            confidences.append(confidence)
-        
-        return np.mean(confidences)
-    
     def evaluate_accuracy(self, 
                          test_dir: str, 
                          ground_truth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
@@ -199,42 +157,38 @@ class CaptchaPredictor:
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
         
-        # Get predictions
         results = self.predict_batch(test_dir)
-        
-        # Calculate accuracy
-        total_count = len(results)
-        correct_count = 0
-        
-        for filename, predicted_text, confidence in results:
+        pairs = []
+        for filename, predicted_text, _confidence in results:
             if ground_truth and filename in ground_truth:
-                true_text = ground_truth[filename]
-                if predicted_text == true_text:
-                    correct_count += 1
+                expected = ground_truth[filename]
             else:
-                # Try to extract true text from filename
-                # This assumes filename contains the true CAPTCHA text
-                filename_without_ext = Path(filename).stem
-                if predicted_text.lower() in filename_without_ext.lower():
-                    correct_count += 1
-        
-        accuracy = correct_count / total_count if total_count > 0 else 0.0
-        
-        # Calculate average confidence
-        avg_confidence = np.mean([conf for _, _, conf in results])
-        
-        evaluation_results = {
-            'total_samples': total_count,
-            'correct_predictions': correct_count,
-            'accuracy': accuracy,
-            'average_confidence': avg_confidence,
-            'predictions': results
+                expected = label_from_filename(filename)
+            pairs.append((predicted_text, expected))
+
+        exact = exact_matches(pairs)
+        per_character = character_accuracy(pairs)
+        average_confidence = (
+            float(np.mean([confidence for _, _, confidence in results]))
+            if results
+            else 0.0
+        )
+        correct_count = sum(predicted == expected for predicted, expected in pairs)
+        logger.info(
+            "Evaluation results: %s/%s exact (%.3f), per-character %.3f",
+            correct_count,
+            len(results),
+            exact,
+            per_character,
+        )
+        return {
+            "total_samples": len(results),
+            "correct_predictions": correct_count,
+            "accuracy": exact,
+            "character_accuracy": per_character,
+            "average_confidence": average_confidence,
+            "predictions": results,
         }
-        
-        logger.info(f"Evaluation results: {correct_count}/{total_count} correct ({accuracy:.3f})")
-        logger.info(f"Average confidence: {avg_confidence:.3f}")
-        
-        return evaluation_results
     
     def save_predictions(self, 
                         results: List[Tuple[str, str, float]], 
