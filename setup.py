@@ -19,12 +19,11 @@ if (this_directory / "requirements.txt").exists():
 setup(
     name="captcha-recognizer",
     version="3.0.0",
-    author="CAPTCHA Recognizer Team",
-    author_email="team@captcha-recognizer.com",
-    description="A modern CAPTCHA recognition system built with TensorFlow 2.x",
+    author="Meghdad Shamsaei",
+    description="A local trainer for fixed-length text captchas",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/your-username/captcha-recognizer",
+    url="https://github.com/SecurityEnthusiast/captcha-recognizer",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -60,8 +59,8 @@ setup(
     },
     keywords="captcha recognition tensorflow machine learning computer vision",
     project_urls={
-        "Bug Reports": "https://github.com/your-username/captcha-recognizer/issues",
-        "Source": "https://github.com/your-username/captcha-recognizer",
-        "Documentation": "https://github.com/your-username/captcha-recognizer#readme",
+        "Bug Reports": "https://github.com/SecurityEnthusiast/captcha-recognizer/issues",
+        "Source": "https://github.com/SecurityEnthusiast/captcha-recognizer",
+        "Documentation": "https://github.com/SecurityEnthusiast/captcha-recognizer#readme",
     },
 )

@@ -116,7 +116,7 @@ We welcome contributions! Here's how you can help:
 ### Development Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/captcha-recognizer.git
+git clone https://github.com/SecurityEnthusiast/captcha-recognizer.git
 cd captcha-recognizer
 
 # Install development dependencies
@@ -138,9 +138,9 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/captcha-recognizer/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/captcha-recognizer/discussions)
-- **Wiki**: [Project Wiki](https://github.com/yourusername/captcha-recognizer/wiki)
+- **Issues**: [GitHub Issues](https://github.com/SecurityEnthusiast/captcha-recognizer/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/SecurityEnthusiast/captcha-recognizer/discussions)
+- **Wiki**: [Project Wiki](https://github.com/SecurityEnthusiast/captcha-recognizer/wiki)
 
 ---
 
