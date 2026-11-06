@@ -13,6 +13,19 @@ def exact_matches(pairs) -> float:
     return hits / len(pairs)
 
 
+def confusion_counts(pairs, limit: int = 8) -> list:
+    """Most common holdout mistakes as (expected, predicted, count)."""
+    counts = {}
+    for predicted, expected in pairs:
+        for got, truth in zip(predicted, expected):
+            if got == truth:
+                continue
+            key = (truth, got)
+            counts[key] = counts.get(key, 0) + 1
+    ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    return [(truth, got, count) for (truth, got), count in ranked[:limit]]
+
+
 def character_accuracy(pairs) -> float:
     """Mean share of positions that match, across every pair."""
     correct = 0
