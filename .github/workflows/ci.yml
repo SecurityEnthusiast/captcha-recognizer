@@ -31,8 +31,15 @@ jobs:
       - name: Install the package
         run: python -m pip install -e ".[dev]"
 
-      - name: Smoke test
-        run: python -m pytest -q
+      - name: Unit tests
+        run: python -m pytest -q --ignore=tests/test_model.py --ignore=tests/test_demo_cycle.py
+        env:
+          TF_CPP_MIN_LOG_LEVEL: "2"
+          CUDA_VISIBLE_DEVICES: ""
+
+      - name: Model and full cycle
+        timeout-minutes: 15
+        run: python -m pytest -q tests/test_model.py tests/test_demo_cycle.py
         env:
           TF_CPP_MIN_LOG_LEVEL: "2"
           CUDA_VISIBLE_DEVICES: ""
