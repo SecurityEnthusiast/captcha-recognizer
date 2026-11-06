@@ -44,7 +44,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Generate ImageCaptcha samples, train for a few epochs, "
-            "and print holdout exact-match accuracy."
+            "print holdout exact-match accuracy, and print one "
+            "prediction line per file in data/test_data."
         )
     )
     parser.add_argument(
@@ -62,6 +63,11 @@ def main(argv=None) -> int:
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--work-dir", default="data/demo")
+    parser.add_argument(
+        "--test-dir",
+        default="data/test_data",
+        help="Folder of images to print one prediction line per file.",
+    )
     args = parser.parse_args(argv)
     if args.samples < 1 or args.epochs < 1:
         parser.error("--samples and --epochs must be at least 1")
@@ -82,7 +88,22 @@ def main(argv=None) -> int:
     correct, total = holdout_exact_match(model, holdout_dir, config.char_set)
     accuracy = correct / total if total else 0.0
     print(f"holdout exact-match accuracy: {accuracy:.3f} ({correct}/{total})")
+
+    rows = []
+    for path in list_image_paths(args.test_dir):
+        text, confidence = predict_image(model, path, config.char_set)
+        print(f"{path.name}: {text} (confidence {confidence:.3f})")
+        rows.append((path.name, text, confidence))
+    _write_predictions(work / "predictions.csv", rows)
     return 0
+
+
+def _write_predictions(path: Path, rows) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        handle.write("filename,predicted_text,confidence\n")
+        for filename, text, confidence in rows:
+            handle.write(f"{filename},{text},{confidence:.4f}\n")
 
 
 def console_main():
