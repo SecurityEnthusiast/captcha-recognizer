@@ -21,6 +21,25 @@ from .preprocess import preprocess_image as preprocess_array
 logger = logging.getLogger(__name__)
 
 
+def predict(image, model, model_config: Optional[ModelConfig] = None) -> Tuple[str, float]:
+    """Read one image and return ``(text, confidence)``.
+
+    ``text`` is 5 characters. ``confidence`` is the mean of the five chosen
+    class probabilities. Dropout is off.
+    """
+    config = model_config or ModelConfig()
+    batch = np.expand_dims(preprocess_array(image, config), axis=0)
+    outputs = model(batch, training=False)
+    if not isinstance(outputs, (list, tuple)):
+        outputs = [outputs]
+    probabilities = [np.asarray(head)[0] for head in outputs]
+    indexes = [int(np.argmax(probs)) for probs in probabilities]
+    text = "".join(config.char_set[index] for index in indexes)
+    chosen = [float(probs[index]) for probs, index in zip(probabilities, indexes)]
+    confidence = float(np.mean(chosen))
+    return text, confidence
+
+
 class CaptchaPredictor:
     """
     Predictor class for CAPTCHA recognition.
@@ -81,18 +100,7 @@ class CaptchaPredictor:
         """
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
-        
-        # Preprocess image
-        image_array = self.preprocess_image(image_path)
-        
-        # Make prediction
-        predictions = self.model.predict(image_array, verbose=0)
-        
-        # Process predictions
-        predicted_text = self._decode_predictions(predictions)
-        confidence = self._calculate_confidence(predictions)
-        
-        return predicted_text, confidence
+        return predict(image_path, self.model, self.config.model)
     
     def predict_batch(self, image_dir: Optional[str] = None) -> List[Tuple[str, str, float]]:
         """
@@ -106,60 +114,15 @@ class CaptchaPredictor:
         """
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
-        
-        # Load test images
-        images, filenames = self.data_loader.load_test_images(image_dir)
-        
-        # Make predictions
-        predictions = self.model.predict(images, verbose=1)
-        
-        # Process results
+
+        from .data_loader import list_image_paths
+
+        directory = image_dir or self.config.data.test_data_dir
         results = []
-        for i, filename in enumerate(filenames):
-            predicted_text = self._decode_predictions([pred[i] for pred in predictions])
-            confidence = self._calculate_confidence([pred[i] for pred in predictions])
-            results.append((filename, predicted_text, confidence))
-        
+        for path in list_image_paths(directory):
+            text, confidence = predict(path, self.model, self.config.model)
+            results.append((path.name, text, confidence))
         return results
-    
-    def _decode_predictions(self, predictions: List[np.ndarray]) -> str:
-        """
-        Decode model predictions to text.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Decoded text string
-        """
-        decoded_text = ""
-        
-        for char_pred in predictions:
-            # Get the character with highest probability
-            char_index = np.argmax(char_pred)
-            decoded_text += self.config.model.char_set[char_index]
-        
-        return decoded_text
-    
-    def _calculate_confidence(self, predictions: List[np.ndarray]) -> float:
-        """
-        Calculate confidence score for predictions.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Average confidence score
-        """
-        confidences = []
-        
-        for char_pred in predictions:
-            # Get the probability of the predicted character
-            char_index = np.argmax(char_pred)
-            confidence = char_pred[char_index]
-            confidences.append(confidence)
-        
-        return np.mean(confidences)
     
     def evaluate_accuracy(self, 
                          test_dir: str, 
