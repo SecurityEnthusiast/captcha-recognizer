@@ -130,10 +130,13 @@ def create_model(config: ModelConfig, learning_rate: float = 1e-4) -> keras.Mode
     model_instance = CaptchaModel(config)
     model = model_instance.build_model()
 
+    # One loss and one accuracy per softmax head. A single metrics entry
+    # does not match the five named outputs, and fit refuses to start.
+    output_names = [f"char_{index}_output" for index in range(config.chars_num)]
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-        loss="categorical_crossentropy",
-        metrics=["accuracy"],
+        loss={name: "categorical_crossentropy" for name in output_names},
+        metrics={name: "accuracy" for name in output_names},
     )
     
     logger.info(f"Created model with {model.count_params()} parameters")
