@@ -186,7 +186,7 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(
         description="Generate captchas, train on CPU, and score a holdout."
     )
-    parser.add_argument("--samples", type=int, default=400, help="images to draw (default 400)")
+    parser.add_argument("--samples", type=int, default=2000, help="images to draw (default 2000)")
     parser.add_argument("--epochs", type=int, default=15, help="training epochs (default 15)")
     parser.add_argument("--batch-size", type=int, default=32, help="batch size (default 32)")
     parser.add_argument("--seed", type=int, default=42)

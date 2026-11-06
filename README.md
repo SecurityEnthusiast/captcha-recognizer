@@ -24,27 +24,21 @@ pip install -e .
 captcha-demo
 ```
 
-The defaults are 400 generated images, batch size 32, and 15 epochs on CPU. The seed is fixed. The command holds out 20% of the images it just drew, trains on the rest, and exits 0 only when both of these are true:
+The defaults are 2000 generated images, batch size 32, and 15 epochs on CPU. The seed is fixed. The command holds out 20% of the images it just drew, trains on the rest, and exits 0 only when both of these are true:
 
 - last-epoch training loss is below the first epoch
 - holdout per-character accuracy is above `1 / 62`
 
 It prints that per-character accuracy, the holdout exact-match rate beside it, the common character confusions, and one prediction line for each file in `data/test_data/`. Those 12 files are a listing, not the score. A CSV of the listing is written to `predictions.csv`.
 
-A default run on CPU (seed 42, dropout 0.5) printed:
+Each character is read from its own columns of the feature map, by one shared softmax. A run on CPU (seed 42, dropout 0.5, 15 epochs) printed:
 
-- holdout exact match `0.0000`
-- holdout per-character `0.0250` (chance is about `0.0161`)
-- training loss from `20.6465` down to `20.1597`
+- 400 images: exact match `0.0000`, per-character `0.0100` (below chance), loss `20.6568` to `20.2035`
+- 2000 images: exact match `0.0000`, per-character `0.3070` (chance is about `0.0161`), loss `20.6404` to `13.9382`
 
-The same settings with more generated images, still seed 42, dropout 0.5, and 15 epochs:
+The quick start draws 2000 images because 400 stay under chance. At 2000 the usual mistakes are lookalikes (`6`/`E`, `P`/`F`, `X`/`x`, `C`/`c`, `I`/`l`). Exact match stays at `0.0000` because a hit needs all five characters. The score log names the run with `samples:`, `epochs:`, `dropout:`, and `charset:`.
 
-- 2000 images: exact match `0.0000`, per-character `0.0145` (below chance), loss `20.6380` to `20.5579`
-- 4000 images: exact match `0.0000`, per-character `0.0175`, loss `20.6388` to `20.6003`
-
-The holdout stays near chance. The 4000-image run passes the learning bar because `0.0175` is just above `0.0161`. Its common mistakes pile onto a few letters (`N`, `f`, `L`), and all 12 files in `data/test_data/` were read as `fGLNi`. The commands are `captcha-demo --samples 2000` and `captcha-demo --samples 4000`. The score log names the run with `samples:`, `epochs:`, `dropout:`, and `charset:`.
-
-On that 400-image set, dropout off for 40 epochs drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. The network memorizes a few hundred captchas. It does not carry that to new ones from the same generator. `--dropout 0` is there to see the memorization. `--digits-only` switches the alphabet to `0-9`.
+The previous head was one 1024-unit layer on an 8×3 map. At these settings its holdout stayed near chance: 400 images per-character `0.0250`, 2000 images `0.0145`, and 4000 images `0.0175`. At 4000 images it read every file in `data/test_data/` as `fGLNi`. On a 400-image set, dropout off for 40 epochs on that head drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. `--dropout 0` is there to see that memorization. `--digits-only` switches the alphabet to `0-9`.
 
 ## Train on your own folder
 
