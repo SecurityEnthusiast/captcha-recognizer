@@ -120,24 +120,20 @@ class CaptchaModel(keras.Model):
         return model
 
 
-def create_model(config: ModelConfig) -> keras.Model:
+def create_model(config: ModelConfig, learning_rate: float = 1e-4) -> keras.Model:
     """
     Factory function to create a CAPTCHA recognition model.
-    
-    Args:
-        config: Model configuration
-        
-    Returns:
-        Compiled Keras model
+
+    The learning rate lives on TrainingConfig. ModelConfig has no
+    learning_rate field, so callers pass the rate in directly.
     """
     model_instance = CaptchaModel(config)
     model = model_instance.build_model()
-    
-    # Compile the model
+
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=config.learning_rate),
-        loss='categorical_crossentropy',
-        metrics=['accuracy']
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        loss="categorical_crossentropy",
+        metrics=["accuracy"],
     )
     
     logger.info(f"Created model with {model.count_params()} parameters")
