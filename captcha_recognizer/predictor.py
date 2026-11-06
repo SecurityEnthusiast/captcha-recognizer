@@ -16,6 +16,7 @@ from PIL import Image
 
 from .config import Config, ModelConfig
 from .data_loader import list_image_files
+from .decode import decode_heads, ordered_heads, predict
 from .model import load_model
 from .preprocess import load_image_batch
 
@@ -88,12 +89,15 @@ class CaptchaPredictor:
         # Preprocess image
         image_array = self.preprocess_image(image_path)
         
-        predictions = self._ordered_heads(self.model.predict(image_array, verbose=0))
+        predictions = ordered_heads(
+            self.model(image_array, training=False),
+            self.config.model.chars_num,
+        )
         
-        # Process predictions
-        predicted_text = self._decode_predictions(predictions)
-        confidence = self._calculate_confidence(predictions)
-        
+        predicted_text, confidence = decode_heads(
+            predictions,
+            self.config.model.char_set,
+        )
         return predicted_text, confidence
     
     def predict_batch(self, image_dir: Optional[str] = None) -> List[Tuple[str, str, float]]:
@@ -120,69 +124,23 @@ class CaptchaPredictor:
         ])
         filenames = [file.name for file in files]
 
-        predictions = self._ordered_heads(self.model.predict(images, verbose=0))
+        predictions = ordered_heads(
+            self.model(images, training=False),
+            self.config.model.chars_num,
+        )
         
         # Process results
         results = []
         for i, filename in enumerate(filenames):
-            predicted_text = self._decode_predictions([pred[i] for pred in predictions])
-            confidence = self._calculate_confidence([pred[i] for pred in predictions])
+            sample_heads = [head[i] for head in predictions]
+            predicted_text, confidence = decode_heads(
+                sample_heads,
+                self.config.model.char_set,
+            )
             results.append((filename, predicted_text, confidence))
         
         return results
-    
-    def _ordered_heads(self, predictions):
-        """List character heads in position order.
 
-        A functional model returns a dict keyed by char_N_output. The old
-        list output is still accepted.
-        """
-        if isinstance(predictions, dict):
-            return [
-                predictions[f"char_{index}_output"]
-                for index in range(self.config.model.chars_num)
-            ]
-        return list(predictions)
-
-    def _decode_predictions(self, predictions: List[np.ndarray]) -> str:
-        """
-        Decode model predictions to text.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Decoded text string
-        """
-        decoded_text = ""
-        
-        for char_pred in predictions:
-            # Get the character with highest probability
-            char_index = np.argmax(char_pred)
-            decoded_text += self.config.model.char_set[char_index]
-        
-        return decoded_text
-    
-    def _calculate_confidence(self, predictions: List[np.ndarray]) -> float:
-        """
-        Calculate confidence score for predictions.
-        
-        Args:
-            predictions: List of prediction arrays for each character position
-            
-        Returns:
-            Average confidence score
-        """
-        confidences = []
-        
-        for char_pred in predictions:
-            # Get the probability of the predicted character
-            char_index = np.argmax(char_pred)
-            confidence = char_pred[char_index]
-            confidences.append(confidence)
-        
-        return np.mean(confidences)
-    
     def evaluate_accuracy(self, 
                          test_dir: str, 
                          ground_truth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
