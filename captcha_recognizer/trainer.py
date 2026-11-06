@@ -82,12 +82,19 @@ class CaptchaTrainer:
             self.train_dataset = self.data_loader.get_training_dataset(
                 self.config.training.batch_size
             )
-            self.val_dataset = self.data_loader.get_validation_dataset(
-                self.config.training.batch_size
-            )
-            
+            self.steps_per_epoch = self.data_loader.steps_per_epoch
+            self.val_dataset = None
+            valid_dir = Path(self.config.data.valid_dir)
+            if valid_dir.is_dir():
+                try:
+                    self.val_dataset = self.data_loader.get_validation_dataset(
+                        self.config.training.batch_size
+                    )
+                except (FileNotFoundError, ValueError):
+                    self.val_dataset = None
+
             logger.info("Datasets prepared successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to prepare datasets: {e}")
             raise
@@ -152,12 +159,15 @@ class CaptchaTrainer:
         logger.info(f"Training for {self.config.training.epochs} epochs...")
         
         try:
+            fit_kwargs = {}
+            if self.val_dataset is not None:
+                fit_kwargs["validation_data"] = self.val_dataset
             self.history = self.model.fit(
                 self.train_dataset,
                 epochs=self.config.training.epochs,
-                validation_data=self.val_dataset,
                 callbacks=callbacks,
-                verbose=1
+                verbose=1,
+                **fit_kwargs,
             )
             
             logger.info("Training completed successfully!")

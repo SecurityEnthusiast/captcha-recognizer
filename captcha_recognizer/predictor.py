@@ -12,11 +12,11 @@ import argparse
 import sys
 from datetime import datetime
 import json
-from PIL import Image
 
 from .config import Config, ModelConfig
 from .model import load_model
 from .data_loader import CaptchaDataLoader
+from .preprocess import preprocess_image as preprocess_array
 
 logger = logging.getLogger(__name__)
 
@@ -62,21 +62,8 @@ class CaptchaPredictor:
             Preprocessed image array
         """
         try:
-            # Load image
-            image = Image.open(image_path)
-            image_gray = image.convert('L')  # Convert to grayscale
-            image_resized = image_gray.resize(
-                (self.config.model.image_width, self.config.model.image_height)
-            )
-            image.close()
-            
-            # Convert to numpy array and normalize
-            image_array = np.array(image_resized, dtype=np.float32)
-            image_array = (image_array / 255.0) - 0.5
-            image_array = np.expand_dims(image_array, axis=-1)  # Add channel dimension
-            image_array = np.expand_dims(image_array, axis=0)   # Add batch dimension
-            
-            return image_array
+            image_array = preprocess_array(image_path, self.config.model)
+            return np.expand_dims(image_array, axis=0)
             
         except Exception as e:
             logger.error(f"Failed to preprocess image {image_path}: {e}")

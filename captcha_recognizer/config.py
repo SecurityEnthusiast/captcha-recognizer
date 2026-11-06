@@ -43,6 +43,8 @@ class TrainingConfig:
 class DataConfig:
     """Data configuration."""
     record_dir: str = './data'
+    train_dir: str = './data/train_data'
+    valid_dir: str = './data/valid_data'
     train_file: str = 'train.tfrecords'
     valid_file: str = 'valid.tfrecords'
     test_data_dir: str = './data/test_data'
@@ -90,6 +92,8 @@ class Config:
             ),
             data=DataConfig(
                 record_dir=os.getenv('CAPTCHA_RECORD_DIR', './data'),
+                train_dir=os.getenv('CAPTCHA_TRAIN_DIR', './data/train_data'),
+                valid_dir=os.getenv('CAPTCHA_VALID_DIR', './data/valid_data'),
                 test_data_dir=os.getenv('CAPTCHA_TEST_DIR', './data/test_data')
             )
         )

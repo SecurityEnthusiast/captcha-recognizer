@@ -7,12 +7,70 @@ import numpy as np
 from pathlib import Path
 from typing import Tuple, Optional, List
 import logging
-from PIL import Image
-import os
 
 from .config import DataConfig, ModelConfig
+from .labels import label_from_filename, one_hot_heads
+from .preprocess import preprocess_image
 
 logger = logging.getLogger(__name__)
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
+
+
+def list_image_paths(image_dir: str) -> List[Path]:
+    """Sorted image files in a folder."""
+    root = Path(image_dir)
+    if not root.is_dir():
+        raise FileNotFoundError(f"image directory not found: {image_dir}")
+    paths = [
+        path
+        for path in sorted(root.iterdir())
+        if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+    ]
+    if not paths:
+        raise ValueError(f"no images found in {image_dir}")
+    return paths
+
+
+def epoch_steps(num_samples: int, batch_size: int) -> int:
+    """Batches in one pass over ``num_samples``, including a partial last batch."""
+    if num_samples < 1:
+        raise ValueError("need at least one image")
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    return (num_samples + batch_size - 1) // batch_size
+
+
+def folder_dataset(
+    image_dir: str,
+    model_config: ModelConfig,
+    batch_size: int,
+    shuffle: bool = True,
+    repeat: bool = False,
+) -> Tuple[tf.data.Dataset, int]:
+    """tf.data pipeline whose label is the filename prefix before ``_``.
+
+    Returns the dataset and the number of batches in one epoch.
+    """
+    paths = list_image_paths(image_dir)
+    images = np.stack([preprocess_image(path, model_config) for path in paths])
+    columns: List[List[np.ndarray]] = [[] for _ in range(model_config.chars_num)]
+    for path in paths:
+        heads = one_hot_heads(
+            label_from_filename(path.name),
+            model_config.char_set,
+            model_config.chars_num,
+        )
+        for index, head in enumerate(heads):
+            columns[index].append(head)
+    labels = tuple(np.stack(column) for column in columns)
+    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    if shuffle:
+        dataset = dataset.shuffle(len(paths), reshuffle_each_iteration=True)
+    dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    if repeat:
+        dataset = dataset.repeat()
+    return dataset, epoch_steps(len(paths), batch_size)
 
 
 class CaptchaDataLoader:
@@ -94,22 +152,26 @@ class CaptchaDataLoader:
         return dataset
     
     def get_training_dataset(self, batch_size: int) -> tf.data.Dataset:
-        """Get training dataset."""
-        return self.create_dataset(
-            self.config.train_path,
+        """Folder of training images. The label is the filename prefix."""
+        dataset, self.steps_per_epoch = folder_dataset(
+            self.config.train_dir,
+            self.model_config,
             batch_size=batch_size,
             shuffle=True,
-            repeat=True
+            repeat=False,
         )
-    
+        return dataset
+
     def get_validation_dataset(self, batch_size: int) -> tf.data.Dataset:
-        """Get validation dataset."""
-        return self.create_dataset(
-            self.config.valid_path,
+        """Folder of validation images. The label is the filename prefix."""
+        dataset, self.validation_steps = folder_dataset(
+            self.config.valid_dir,
+            self.model_config,
             batch_size=batch_size,
             shuffle=False,
-            repeat=False
+            repeat=False,
         )
+        return dataset
     
     def load_test_images(self, image_dir: Optional[str] = None) -> Tuple[np.ndarray, List[str]]:
         """
@@ -127,42 +189,16 @@ class CaptchaDataLoader:
         if not Path(image_dir).exists():
             raise FileNotFoundError(f"Test image directory not found: {image_dir}")
         
-        # Supported image extensions
-        extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
-        
-        # Find all image files
-        image_files = []
-        for ext in extensions:
-            image_files.extend(Path(image_dir).glob(f"*{ext}"))
-            image_files.extend(Path(image_dir).glob(f"*{ext.upper()}"))
-        
-        if not image_files:
-            raise ValueError(f"No image files found in {image_dir}")
-        
+        image_files = list_image_paths(image_dir)
         logger.info(f"Found {len(image_files)} test images")
-        
-        # Load and preprocess images
+
         images = []
         filenames = []
-        
+
         for image_file in image_files:
             try:
-                # Load image
-                image = Image.open(image_file)
-                image_gray = image.convert('L')  # Convert to grayscale
-                image_resized = image_gray.resize(
-                    (self.model_config.image_width, self.model_config.image_height)
-                )
-                image.close()
-                
-                # Convert to numpy array and normalize
-                image_array = np.array(image_resized, dtype=np.float32)
-                image_array = (image_array / 255.0) - 0.5
-                image_array = np.expand_dims(image_array, axis=-1)  # Add channel dimension
-                
-                images.append(image_array)
+                images.append(preprocess_image(image_file, self.model_config))
                 filenames.append(image_file.name)
-                
             except Exception as e:
                 logger.warning(f"Failed to load image {image_file}: {e}")
                 continue
