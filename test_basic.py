@@ -36,7 +36,7 @@ def test_imports():
 def test_configuration():
     """Test configuration system."""
     try:
-        from captcha_recognizer import Config
+        from captcha_recognizer import Config, TrainingConfig
         
         # Test default configuration
         config = Config()
