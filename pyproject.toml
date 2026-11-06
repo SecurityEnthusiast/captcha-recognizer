@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "captcha-recognizer"
+dynamic = ["version"]
+description = "Train a fixed-length text captcha recognizer on images you generate."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "Apache-2.0"}
+authors = [{name = "SecurityEnthusiast", email = "meghdadshamsaei@gmail.com"}]
+keywords = ["captcha", "tensorflow", "ocr"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "tensorflow==2.16.2",
+    "numpy>=1.26.0,<2",
+    "pillow>=10.0.0",
+    "captcha==0.7.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.urls]
+"Bug Reports" = "https://github.com/SecurityEnthusiast/captcha-recognizer/issues"
+Source = "https://github.com/SecurityEnthusiast/captcha-recognizer"
+Documentation = "https://github.com/SecurityEnthusiast/captcha-recognizer#readme"
+
+[project.scripts]
+captcha-demo = "captcha_recognizer.demo:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "captcha_recognizer.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["captcha_recognizer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
