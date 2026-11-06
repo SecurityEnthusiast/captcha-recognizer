@@ -15,8 +15,9 @@ import json
 from PIL import Image
 
 from .config import Config, ModelConfig
+from .data_loader import list_image_files
 from .model import load_model
-from .data_loader import CaptchaDataLoader
+from .preprocess import load_image_batch
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,6 @@ class CaptchaPredictor:
     
     def __init__(self, config: Config, model_path: Optional[str] = None):
         self.config = config
-        self.data_loader = CaptchaDataLoader(config.data, config.model)
         self.model = None
         
         if model_path:
@@ -62,21 +62,11 @@ class CaptchaPredictor:
             Preprocessed image array
         """
         try:
-            # Load image
-            image = Image.open(image_path)
-            image_gray = image.convert('L')  # Convert to grayscale
-            image_resized = image_gray.resize(
-                (self.config.model.image_width, self.config.model.image_height)
+            return load_image_batch(
+                image_path,
+                self.config.model.image_width,
+                self.config.model.image_height,
             )
-            image.close()
-            
-            # Convert to numpy array and normalize
-            image_array = np.array(image_resized, dtype=np.float32)
-            image_array = (image_array / 255.0) - 0.5
-            image_array = np.expand_dims(image_array, axis=-1)  # Add channel dimension
-            image_array = np.expand_dims(image_array, axis=0)   # Add batch dimension
-            
-            return image_array
             
         except Exception as e:
             logger.error(f"Failed to preprocess image {image_path}: {e}")
@@ -98,8 +88,7 @@ class CaptchaPredictor:
         # Preprocess image
         image_array = self.preprocess_image(image_path)
         
-        # Make prediction
-        predictions = self.model.predict(image_array, verbose=0)
+        predictions = self._ordered_heads(self.model.predict(image_array, verbose=0))
         
         # Process predictions
         predicted_text = self._decode_predictions(predictions)
@@ -120,11 +109,18 @@ class CaptchaPredictor:
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
         
-        # Load test images
-        images, filenames = self.data_loader.load_test_images(image_dir)
-        
-        # Make predictions
-        predictions = self.model.predict(images, verbose=1)
+        files = list_image_files(image_dir or self.config.data.test_data_dir)
+        images = np.stack([
+            load_image_batch(
+                file,
+                self.config.model.image_width,
+                self.config.model.image_height,
+            )[0]
+            for file in files
+        ])
+        filenames = [file.name for file in files]
+
+        predictions = self._ordered_heads(self.model.predict(images, verbose=0))
         
         # Process results
         results = []
@@ -135,6 +131,19 @@ class CaptchaPredictor:
         
         return results
     
+    def _ordered_heads(self, predictions):
+        """List character heads in position order.
+
+        A functional model returns a dict keyed by char_N_output. The old
+        list output is still accepted.
+        """
+        if isinstance(predictions, dict):
+            return [
+                predictions[f"char_{index}_output"]
+                for index in range(self.config.model.chars_num)
+            ]
+        return list(predictions)
+
     def _decode_predictions(self, predictions: List[np.ndarray]) -> str:
         """
         Decode model predictions to text.

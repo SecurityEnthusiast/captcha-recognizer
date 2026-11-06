@@ -4,8 +4,6 @@ Configuration settings for the CAPTCHA recognition system.
 
 import os
 from dataclasses import dataclass
-from typing import Optional
-from pathlib import Path
 
 
 @dataclass
@@ -36,26 +34,15 @@ class TrainingConfig:
     validation_split: float = 0.2
     early_stopping_patience: int = 10
     checkpoint_dir: str = './checkpoints'
-    model_save_path: str = './models/captcha_model.h5'
+    model_save_path: str = "./models/captcha_model.keras"
 
 
 @dataclass
 class DataConfig:
-    """Data configuration."""
-    record_dir: str = './data'
-    train_file: str = 'train.tfrecords'
-    valid_file: str = 'valid.tfrecords'
-    test_data_dir: str = './data/test_data'
-    
-    @property
-    def train_path(self) -> Path:
-        """Full path to training data."""
-        return Path(self.record_dir) / self.train_file
-    
-    @property
-    def valid_path(self) -> Path:
-        """Full path to validation data."""
-        return Path(self.record_dir) / self.valid_file
+    """Folders of images named {label}_*.png."""
+    train_dir: str = "./data/train_data"
+    valid_dir: str = "./data/valid_data"
+    test_data_dir: str = "./data/test_data"
 
 
 @dataclass
@@ -89,8 +76,9 @@ class Config:
                 epochs=int(os.getenv('CAPTCHA_EPOCHS', 100))
             ),
             data=DataConfig(
-                record_dir=os.getenv('CAPTCHA_RECORD_DIR', './data'),
-                test_data_dir=os.getenv('CAPTCHA_TEST_DIR', './data/test_data')
+                train_dir=os.getenv("CAPTCHA_TRAIN_DIR", "./data/train_data"),
+                valid_dir=os.getenv("CAPTCHA_VALID_DIR", "./data/valid_data"),
+                test_data_dir=os.getenv("CAPTCHA_TEST_DIR", "./data/test_data"),
             )
         )
 
