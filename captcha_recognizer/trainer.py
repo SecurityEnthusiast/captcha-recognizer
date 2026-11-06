@@ -28,6 +28,7 @@ def fit_model(
     kwargs = {
         "epochs": epochs,
         "steps_per_epoch": epoch_steps(train_count, batch_size),
+        "shuffle": False,
         "verbose": verbose,
     }
     if callbacks:

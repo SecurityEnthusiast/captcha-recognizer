@@ -42,10 +42,14 @@ def create_model(config: ModelConfig, learning_rate: float = 1e-4) -> keras.Mode
         for index in range(config.chars_num)
     }
     model = keras.Model(inputs=inputs, outputs=outputs, name="captcha_model")
+    per_head = {
+        name: "categorical_crossentropy" for name in outputs
+    }
+    per_head_accuracy = {name: "accuracy" for name in outputs}
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-        loss="categorical_crossentropy",
-        metrics=["accuracy"],
+        loss=per_head,
+        metrics=per_head_accuracy,
     )
     logger.info("Created model with %s parameters", model.count_params())
     return model
