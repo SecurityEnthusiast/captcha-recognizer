@@ -3,41 +3,12 @@
 import argparse
 from pathlib import Path
 
-import numpy as np
-
-from .config import ModelConfig
 from .data_loader import list_image_paths
 from .generate import generate
 from .labels import label_from_filename
-from .preprocess import preprocess_image
+from .metrics import score_pairs
+from .predictor import predict
 from .trainer import train
-
-
-def predict_image(model, image, char_set):
-    """Return text and the mean of the five chosen class probabilities.
-
-    Dropout stays off: the model is called with ``training=False``.
-    """
-    batch = np.expand_dims(preprocess_image(image), axis=0)
-    outputs = model(batch, training=False)
-    probabilities = [np.asarray(head)[0] for head in outputs]
-    indexes = [int(np.argmax(probs)) for probs in probabilities]
-    text = "".join(char_set[index] for index in indexes)
-    confidence = float(
-        np.mean([float(probs[index]) for probs, index in zip(probabilities, indexes)])
-    )
-    return text, confidence
-
-
-def holdout_exact_match(model, holdout_dir, char_set):
-    """Count holdout files whose full 5-character label matches."""
-    correct = 0
-    paths = list_image_paths(holdout_dir)
-    for path in paths:
-        text, _confidence = predict_image(model, path, char_set)
-        if text == label_from_filename(path.name):
-            correct += 1
-    return correct, len(paths)
 
 
 def main(argv=None) -> int:
@@ -84,14 +55,20 @@ def main(argv=None) -> int:
         epochs=args.epochs,
         batch_size=args.batch_size,
     )
-    config = ModelConfig()
-    correct, total = holdout_exact_match(model, holdout_dir, config.char_set)
-    accuracy = correct / total if total else 0.0
-    print(f"holdout exact-match accuracy: {accuracy:.3f} ({correct}/{total})")
+    holdout_pairs = []
+    for path in list_image_paths(holdout_dir):
+        text, _confidence = predict(path, model)
+        holdout_pairs.append((text, label_from_filename(path.name)))
+    scores = score_pairs(holdout_pairs)
+    print(
+        "holdout exact-match accuracy: "
+        f"{scores['exact_match']:.3f} ({scores['exact_correct']}/{scores['total']})"
+    )
+    print(f"holdout per-character accuracy: {scores['per_character']:.3f}")
 
     rows = []
     for path in list_image_paths(args.test_dir):
-        text, confidence = predict_image(model, path, config.char_set)
+        text, confidence = predict(path, model)
         print(f"{path.name}: {text} (confidence {confidence:.3f})")
         rows.append((path.name, text, confidence))
     _write_predictions(work / "predictions.csv", rows)
