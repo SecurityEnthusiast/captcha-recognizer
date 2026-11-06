@@ -67,6 +67,7 @@ setup(
         "console_scripts": [
             "captcha-train=captcha_recognizer.trainer:main",
             "captcha-predict=captcha_recognizer.predictor:main",
+            "captcha-demo=captcha_recognizer.demo:console_main",
         ],
     },
     include_package_data=True,
