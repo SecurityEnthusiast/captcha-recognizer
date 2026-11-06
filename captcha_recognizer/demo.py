@@ -17,7 +17,7 @@ from .config import CHAR_SET, Config, DataConfig, ModelConfig, TrainingConfig
 from .data_loader import folder_dataset, label_from_filename, list_image_files
 from .decode import predict
 from .generate import generate
-from .metrics import character_accuracy, exact_matches
+from .metrics import character_accuracy, confusion_counts, exact_matches
 from .model import create_model
 from .trainer import fit_model
 
@@ -72,6 +72,7 @@ def run_demo(
     width: int = 128,
     height: int = 48,
     font_size: int = 28,
+    dropout: float = 0.5,
 ) -> int:
     """Generate, train, print scores, and return a process status code."""
     set_seeds(seed)
@@ -113,7 +114,7 @@ def run_demo(
         ),
         data=DataConfig(test_data_dir=str(test_dir)),
     )
-    model = create_model(model_config, learning_rate=learning_rate)
+    model = create_model(model_config, learning_rate=learning_rate, dropout=dropout)
     train_dataset, train_count = folder_dataset(
         train_dir,
         model_config,
@@ -147,6 +148,12 @@ def run_demo(
     print(f"first epoch loss: {first_loss:.4f}")
     print(f"last epoch loss: {last_loss:.4f}")
     print("learning bar: passed" if passed else "learning bar: failed")
+    mistakes = confusion_counts(pairs)
+    if mistakes:
+        rendered = ", ".join(f"{truth}->{got} {count}" for truth, got, count in mistakes)
+        print(f"holdout confusions: {rendered}")
+    else:
+        print("holdout confusions: none")
 
     rows = []
     test_path = Path(test_dir)
@@ -184,6 +191,12 @@ def main(argv=None) -> None:
         help="use 0-9 instead of the 62-character set",
     )
     parser.add_argument("--font-size", type=int, default=28)
+    parser.add_argument(
+        "--dropout",
+        type=float,
+        default=0.5,
+        help="dropout rate (default 0.5). 0 memorizes the training images and the holdout gets worse",
+    )
     args = parser.parse_args(argv)
     status = run_demo(
         samples=args.samples,
@@ -197,6 +210,7 @@ def main(argv=None) -> None:
         predictions_path=args.predictions,
         char_set=DIGITS if args.digits_only else CHAR_SET,
         font_size=args.font_size,
+        dropout=args.dropout,
     )
     sys.exit(status)
 

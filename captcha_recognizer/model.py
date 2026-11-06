@@ -10,7 +10,7 @@ from .config import ModelConfig
 logger = logging.getLogger(__name__)
 
 
-def create_model(config: ModelConfig, learning_rate: float = 1e-4) -> keras.Model:
+def create_model(config: ModelConfig, learning_rate: float = 1e-4, dropout: float = 0.5) -> keras.Model:
     """Build the 4-block CNN and compile it.
 
     Each character position is its own softmax, named char_0_output through
@@ -31,7 +31,8 @@ def create_model(config: ModelConfig, learning_rate: float = 1e-4) -> keras.Mode
 
     x = layers.Flatten(name="flatten")(x)
     x = layers.Dense(1024, activation="relu", name="dense1")(x)
-    x = layers.Dropout(0.5, name="dropout")(x)
+    if dropout:
+        x = layers.Dropout(dropout, name="dropout")(x)
 
     outputs = {
         f"char_{index}_output": layers.Dense(

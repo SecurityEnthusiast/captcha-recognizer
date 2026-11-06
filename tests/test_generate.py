@@ -33,6 +33,14 @@ def test_generated_images_match_the_model_size(tmp_path):
     assert len(label_from_filename(paths[0].name)) == 4
 
 
+def test_confusion_counts_keep_the_expected_character_first():
+    from captcha_recognizer.metrics import confusion_counts
+
+    counts = confusion_counts([("O1xxx", "01xxx"), ("Oxxxx", "0xxxx")])
+    assert counts[0] == ("0", "O", 2)
+    assert ("1", "1", 1) not in [(truth, got, count) for truth, got, count in counts]
+
+
 def test_learning_bar_requires_a_loss_drop_and_better_than_chance():
     from captcha_recognizer.demo import learning_bar_passed
 

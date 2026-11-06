@@ -29,15 +29,15 @@ The defaults are 400 generated images, batch size 32, and 15 epochs on CPU. The 
 - last-epoch training loss is below the first epoch
 - holdout per-character accuracy is above `1 / 62`
 
-It prints that per-character accuracy, the holdout exact-match rate beside it, and one prediction line for each file in `data/test_data/`. Those 12 files are a listing, not the score. A CSV of the listing is written to `predictions.csv`.
+It prints that per-character accuracy, the holdout exact-match rate beside it, the common character confusions, and one prediction line for each file in `data/test_data/`. Those 12 files are a listing, not the score. A CSV of the listing is written to `predictions.csv`.
 
-A default run on CPU (seed 42) printed:
+A default run on CPU (seed 42, dropout 0.5) printed:
 
 - holdout exact match `0.0000`
 - holdout per-character `0.0250` (chance is about `0.0161`)
 - training loss from `20.6465` down to `20.1597`
 
-Exact match stays near zero after that short run. Pairs such as `0`/`O` and `1`/`l`/`I` keep it there. Read the per-character line. `--digits-only` switches the alphabet to `0-9`. Sizes and epoch count are in `captcha-demo --help`, not hard-coded as a 50,000-image job.
+The same images with dropout off for 40 epochs drove training loss to `0.20` and holdout per-character accuracy to `0.0075`, below chance. The network memorizes a few hundred captchas. It does not carry that to new ones from the same generator. `--dropout 0` is there to see the memorization. `--digits-only` switches the alphabet to `0-9`.
 
 ## Train on your own folder
 
