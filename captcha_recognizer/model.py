@@ -1,8 +1,8 @@
 """Five-head CNN for a fixed-length captcha string.
 
 Width is pooled only twice, so the columns stay in left-to-right order.
-Each character is a softmax on its own slice of those columns, and the
-softmax weights are shared across the slices.
+Each character keeps the rows of its own slice. One shared softmax
+scores every slice.
 """
 
 import logging
@@ -56,10 +56,7 @@ def create_model(config: ModelConfig, learning_rate: float = 1e-4, dropout: floa
         pool_size = (2, 2) if index <= 2 else (2, 1)
         x = layers.MaxPooling2D(pool_size=pool_size, name=f"pool{index}")(x)
 
-    map_height = config.image_height // 16
     map_width = config.image_width // 4
-    x = layers.AveragePooling2D(pool_size=(map_height, 1), name="collapse_height")(x)
-    x = layers.Reshape((map_width, 64), name="columns")(x)
     if dropout:
         x = layers.Dropout(dropout, name="dropout")(x)
 
@@ -71,8 +68,8 @@ def create_model(config: ModelConfig, learning_rate: float = 1e-4, dropout: floa
     outputs = {}
     for index, (start, length) in enumerate(character_windows(map_width, config.chars_num)):
         right = map_width - (start + length)
-        slot = layers.Cropping1D(
-            cropping=(start, right),
+        slot = layers.Cropping2D(
+            cropping=((0, 0), (start, right)),
             name=f"char_{index}_span",
         )(x)
         flat = layers.Flatten(name=f"char_{index}_flat")(slot)
