@@ -8,21 +8,29 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 import numpy as np
 
 
-def test_the_pooled_map_feeds_five_heads():
+def test_each_character_reads_its_own_columns():
     from captcha_recognizer import ModelConfig, create_model
+    from captcha_recognizer.model import character_windows
 
     model = create_model(ModelConfig(), learning_rate=1e-3)
     assert tuple(model.input.shape) == (None, 48, 128, 1)
-    # Four 2x2 pools turn 128x48 into 8x3, still 64 filters.
-    assert int(model.get_layer("flatten").output.shape[-1]) == 8 * 3 * 64
-    assert model.get_layer("dense1").units == 1024
+    assert tuple(model.get_layer("columns").output.shape) == (None, 32, 64)
+    assert tuple(model.get_layer("pool1").pool_size) == (2, 2)
+    assert tuple(model.get_layer("pool2").pool_size) == (2, 2)
+    assert tuple(model.get_layer("pool3").pool_size) == (2, 1)
+    assert tuple(model.get_layer("pool4").pool_size) == (2, 1)
+    assert model.get_layer("char_classifier").units == 62
+    names = {layer.name for layer in model.layers}
+    assert "dense1" not in names
+    windows = character_windows(32, 5)
+    assert windows == [(0, 8), (6, 8), (12, 8), (18, 8), (24, 8)]
+    for index, (start, length) in enumerate(windows):
+        span = model.get_layer(f"char_{index}_span")
+        assert tuple(span.cropping) == (start, 32 - (start + length))
+        head = model.get_layer(f"char_{index}_output")
+        assert head.name == f"char_{index}_output"
     for index in range(1, 5):
         assert model.get_layer(f"conv{index}").filters == 64
-        assert tuple(model.get_layer(f"pool{index}").pool_size) == (2, 2)
-    for index in range(5):
-        head = model.get_layer(f"char_{index}_output")
-        assert head.units == 62
-        assert head.activation.__name__ == "softmax"
 
 
 def test_dropout_is_a_layer_only_when_the_rate_is_set():
