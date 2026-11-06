@@ -51,12 +51,13 @@ class CaptchaDataLoader:
         image = tf.cast(image, tf.float32) * (1.0 / 255.0) - 0.5
         image = tf.expand_dims(image, axis=-1)  # Add channel dimension
         
-        # Decode label
+        # Decode label into one one-hot vector per character head.
         label = tf.io.decode_raw(parsed_features['label_raw'], tf.uint8)
         label = tf.reshape(label, [self.model_config.chars_num, self.model_config.classes_num])
         label = tf.cast(label, tf.float32)
-        
-        return image, label
+        heads = tuple(label[i] for i in range(self.model_config.chars_num))
+
+        return image, heads
     
     def create_dataset(self, 
                       file_path: str, 
@@ -201,16 +202,19 @@ class CaptchaDataLoader:
         ).astype(np.float32)
         
         dummy_labels = np.random.randint(
-            0, 
-            self.model_config.classes_num, 
-            (num_samples, self.model_config.chars_num)
+            0,
+            self.model_config.classes_num,
+            (num_samples, self.model_config.chars_num),
         )
-        
-        # Convert labels to one-hot encoding
+
+        # One one-hot vector per character, matching the five softmax heads.
         dummy_labels_onehot = tf.one_hot(dummy_labels, self.model_config.classes_num)
-        
-        # Create dataset
-        dataset = tf.data.Dataset.from_tensor_slices((dummy_images, dummy_labels_onehot))
+        heads = tuple(
+            dummy_labels_onehot[:, index, :]
+            for index in range(self.model_config.chars_num)
+        )
+
+        dataset = tf.data.Dataset.from_tensor_slices((dummy_images, heads))
         dataset = dataset.batch(32)
         
         return dataset

@@ -91,7 +91,7 @@ def example_data_loader():
         for batch_idx, (images, labels) in enumerate(synthetic_dataset):
             print(f"  Batch {batch_idx + 1}:")
             print(f"    Images shape: {images.shape}")
-            print(f"    Labels shape: {labels.shape}")
+            print(f"    Label heads: {len(labels)} x {labels[0].shape}")
             if batch_idx >= 1:  # Just show first 2 batches
                 break
         
